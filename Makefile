@@ -1,4 +1,4 @@
 include Python.mk
 PROJECT	= gdrive
-# lint :: mypy
+COV_FAIL_UNDER = 53
 doc :: README.md
