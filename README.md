@@ -1,14 +1,12 @@
 # gdrive
 ```
-usage: gdrive [--limit LIMIT] [--all-fields] [-h] [-H] [-v] [-V]
-              [--config FILE] [--print-config] [--print-url]
-              [--completion [SHELL]]
+usage: gdrive [--all-fields] [-h] [-H] [-v] [-V] [--config FILE]
+              [--print-config] [--print-url] [--completion [SHELL]]
               COMMAND ...
 
 Google `drive` command line interface.
 
 options:
-  --limit LIMIT         Limit execution to `LIMIT` number of items.
   --all-fields          Use parms['fields'] = '*' (be verbose).
 
 Specify one of:
@@ -40,13 +38,14 @@ See `gdrive COMMAND --help` for help on a specific command.
 
 ## gdrive about
 ```
-usage: gdrive about [-h] [--no-themes]
+usage: gdrive about [-h] [--no-themes] [--pretty-print]
 
 about.description
 
 options:
-  -h, --help   Show this help message and exit.
-  --no-themes  Remove theme elements; (implies --all-fields).
+  -h, --help      Show this help message and exit.
+  --no-themes     Remove theme elements; (implies --all-fields).
+  --pretty-print  Pretty-print items.
 ```
 
 ## gdrive download
@@ -65,29 +64,35 @@ options:
 
 ## gdrive files
 ```
-usage: gdrive files [-h] [-l]
+usage: gdrive files [-h] [-l | --pretty-print] [--limit LIMIT]
 
 files.description
 
 options:
   -h, --help          Show this help message and exit.
   -l, --long-listing  Use a long listing format.
+  --pretty-print      Pretty-print items.
+  --limit LIMIT       Limit execution to `LIMIT` number of items.
 ```
 
 ## gdrive folders
 ```
-usage: gdrive folders [-h] [-l]
+usage: gdrive folders [-h] [-l | --pretty-print] [--limit LIMIT]
 
 folders.description
 
 options:
   -h, --help          Show this help message and exit.
   -l, --long-listing  Use a long listing format.
+  --pretty-print      Pretty-print items.
+  --limit LIMIT       Limit execution to `LIMIT` number of items.
 ```
 
 ## gdrive list
 ```
-usage: gdrive list [-h] [-t] [-l] [-f] [-d] [-R] PATH
+usage: gdrive list [-h] [-t | -l | --pretty-print] [-f | -d] [-R]
+                   [--limit LIMIT]
+                   PATH
 
 list.description
 
@@ -98,9 +103,11 @@ options:
   -h, --help          Show this help message and exit.
   -t, --time          Use a time listing format.
   -l, --long-listing  Use a long listing format.
+  --pretty-print      Pretty-print items.
   -f, --files-only    Show files only.
   -d, --folders-only  Show folders only.
   -R, --recursive     Recurse into any sub-folders, recursively.
+  --limit LIMIT       Limit execution to `LIMIT` number of items.
 ```
 
 ## gdrive rename

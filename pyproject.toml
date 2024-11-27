@@ -1,6 +1,6 @@
 [project]
 name = "rlane-gdrive"
-version = "1.0.2"
+version = "1.0.3"
 description = "Google Drive CLI"
 authors = [
     {name = "Russel Lane", email = "russel@rlane.com"},
@@ -21,6 +21,7 @@ dependencies = [
     "google-auth-oauthlib>=1.2.1",
     "loguru>=0.7.2",
     "python-magic>=0.4.27",
+    "rich>=13.9.4",
     "rlane-libcli>=1.0.8",
     "rlane-libfile>=1.0.2",
     "xdg>=6.0.0",
@@ -32,9 +33,7 @@ Homepage = "https://github.com/russellane/gdrive"
 [project.scripts]
 gdrive = "gdrive.cli:main"
 
-[tool.pdm]
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
     "black>=24.10.0",
     "flake8-bugbear>=24.10.31",
@@ -44,14 +43,10 @@ dev = [
     "flake8-simplify>=0.21.0",
     "flake8>=7.1.1",
     "isort>=5.13.2",
+    "mypy>=1.13.0",
     "pytest-cov>=6.0.0",
     "pytest>=8.3.3",
     "types-requests>=2.32.0.20241016",
-]
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore:Parsing dates involving:DeprecationWarning",
 ]
 
 [tool.black]

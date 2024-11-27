@@ -1,10 +1,8 @@
 """Command Line Interface to Google Drive."""
 
 from pathlib import Path
-from typing import Any
 
 from libcli import BaseCLI
-from loguru import logger
 
 from gdrive.api import GoogleDriveAPI
 
@@ -23,13 +21,13 @@ class GoogleDriveCLI(BaseCLI):
         "dist-name": "rlane-gdrive",
     }
 
-    api: Any = None  # connection to google service
+    api: GoogleDriveAPI  # connection to google service
 
     def init_parser(self) -> None:
         """Initialize argument parser."""
 
         self.ArgumentParser(
-            prog="gdrive",
+            prog=__package__,
             description="Google `drive` command line interface.",
             epilog="See `%(prog)s COMMAND --help` for help on a specific command.",
         )
@@ -37,20 +35,13 @@ class GoogleDriveCLI(BaseCLI):
     def add_arguments(self) -> None:
         """Add arguments to parser."""
 
-        arg = self.parser.add_argument(
-            "--limit",
-            type=int,
-            help="limit execution to `LIMIT` number of items",
-        )
-        self.add_default_to_help(arg)
+        self.add_subcommand_modules("gdrive.commands", prefix="Drive", suffix="Cmd")
 
         self.parser.add_argument(
             "--all-fields",
             action="store_true",
             help="use parms['fields'] = '*' (be verbose)",
         )
-
-        self.add_subcommand_modules("gdrive.commands", prefix="Drive", suffix="Cmd")
 
     def main(self) -> None:
         """Command line interface entry point (method)."""
@@ -59,19 +50,8 @@ class GoogleDriveCLI(BaseCLI):
             self.parser.print_help()
             self.parser.exit(2, "error: Missing COMMAND\n")
 
-        self.api = GoogleDriveAPI(self.options.all_fields)
+        self.api = GoogleDriveAPI(self.options)
         self.options.cmd()
-
-    def check_limit(self):
-        """Call at top of loop before performing work."""
-
-        if self.options.limit is None:
-            logger.trace("No limit")
-            return False
-
-        self.options.limit -= 1
-        logger.trace("limit {!r}", self.options.limit)
-        return self.options.limit < 0
 
 
 def main(args: list[str] | None = None) -> None:

@@ -1,9 +1,9 @@
 """Drive `about` command module."""
 
-from libcli import BaseCmd
+from gdrive.commands import GoogleDriveCmd
 
 
-class DriveAboutCmd(BaseCmd):
+class DriveAboutCmd(GoogleDriveCmd):
     """Drive `about` command class."""
 
     def init_command(self) -> None:
@@ -21,10 +21,12 @@ class DriveAboutCmd(BaseCmd):
             help="remove theme elements; (implies --all-fields)",
         )
 
+        self.add_pretty_print_option(parser)
+
     def run(self) -> None:
         """Perform the command."""
 
-        if not self.options.no_themes:
+        if self.options.no_themes:
             self.options.all_fields = True
             self.cli.api.all_fields = True
 
@@ -34,4 +36,7 @@ class DriveAboutCmd(BaseCmd):
             about.pop("driveThemes", None)
             about.pop("teamDriveThemes", None)
 
-        print(about)
+        if self.options.pretty_print:
+            self.pprint(about)
+        else:
+            print(about)

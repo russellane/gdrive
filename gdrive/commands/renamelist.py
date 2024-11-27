@@ -2,10 +2,10 @@
 
 import json
 
-from libcli import BaseCmd
+from gdrive.commands import GoogleDriveCmd
 
 
-class DriveRenamelistCmd(BaseCmd):
+class DriveRenamelistCmd(GoogleDriveCmd):
     """Drive `renamelist` command class."""
 
     def init_command(self) -> None:

@@ -2,10 +2,10 @@
 
 import os
 
-from libcli import BaseCmd
+from gdrive.commands import GoogleDriveCmd
 
 
-class DriveDownloadCmd(BaseCmd):
+class DriveDownloadCmd(GoogleDriveCmd):
     """Drive `download` command class."""
 
     def init_command(self) -> None:

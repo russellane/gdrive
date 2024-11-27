@@ -2,10 +2,10 @@
 
 import os
 
-from libcli import BaseCmd
+from gdrive.commands import GoogleDriveCmd
 
 
-class DriveListCmd(BaseCmd):
+class DriveListCmd(GoogleDriveCmd):
     """Drive `list` command class."""
 
     def init_command(self) -> None:
@@ -17,33 +17,14 @@ class DriveListCmd(BaseCmd):
             description="list.description",
         )
 
-        parser.add_argument(
-            "-t",
-            "--time",
-            action="store_true",
-            help="use a time listing format",
-        )
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument("-t", "--time", action="store_true", help="use a time listing format")
+        self.add_long_listing_option(group)
+        self.add_pretty_print_option(group)
 
-        parser.add_argument(
-            "-l",
-            "--long-listing",
-            action="store_true",
-            help="use a long listing format",
-        )
-
-        parser.add_argument(
-            "-f",
-            "--files-only",
-            action="store_true",
-            help="show files only",
-        )
-
-        parser.add_argument(
-            "-d",
-            "--folders-only",
-            action="store_true",
-            help="show folders only",
-        )
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument("-f", "--files-only", action="store_true", help="show files only")
+        group.add_argument("-d", "--folders-only", action="store_true", help="show folders only")
 
         parser.add_argument(
             "-R",
@@ -51,6 +32,8 @@ class DriveListCmd(BaseCmd):
             action="store_true",
             help="recurse into any sub-folders, recursively",
         )
+
+        self.add_limit_option(parser)
 
         parser.add_argument(
             "path",
@@ -75,10 +58,13 @@ class DriveListCmd(BaseCmd):
             self.options.recursive,
         ):
 
-            if self.cli.check_limit():
+            if self.check_limit():
                 break
 
-            mimetype = item["mimeType"]
+            if self.options.pretty_print:
+                self.pprint(item)
+                continue
+
             filename = item["PATH"]
             if self.cli.api.is_folder(item):
                 filename += os.path.sep
@@ -87,17 +73,14 @@ class DriveListCmd(BaseCmd):
                 print(str.format("{:s} {:s}", item["modifiedTime"], filename))
 
             elif self.options.long_listing:
-                if user := item.get("lastModifyingUser"):
-                    user = user.get("displayName")
                 print(
                     str.format(
                         "{:<66s} {:<13s} {:s} {:s}",
-                        mimetype,
-                        user or "?",
+                        item["mimeType"],
+                        self.get_item_user_name(item),
                         item["modifiedTime"],
                         filename,
                     )
                 )
             else:
-                # print(str.format("{:<66s} {:s}", mimetype, filename))
                 print(filename)

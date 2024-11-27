@@ -1,10 +1,11 @@
 """Drive `uploaddir` command module."""
 
-from libcli import BaseCmd
 from libfile import File
 
+from gdrive.commands import GoogleDriveCmd
 
-class DriveUploaddirCmd(BaseCmd):
+
+class DriveUploaddirCmd(GoogleDriveCmd):
     """Drive `uploaddir` command class."""
 
     def init_command(self) -> None:

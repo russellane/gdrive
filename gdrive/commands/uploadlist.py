@@ -3,11 +3,12 @@
 import json
 import os
 
-from libcli import BaseCmd
 from libfile import File
 
+from gdrive.commands import GoogleDriveCmd
 
-class DriveUploadlistCmd(BaseCmd):
+
+class DriveUploadlistCmd(GoogleDriveCmd):
     """Drive `uploadlist` command class."""
 
     def init_command(self) -> None:

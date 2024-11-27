@@ -1,19 +1,14 @@
-import argparse
 import os
 import sys
+from argparse import ArgumentParser, Namespace
 
 import pytest
 
 from gdrive.api import GoogleDriveAPI
-from gdrive.cli import GoogleDriveCLI
+from gdrive.cli import main
 
 disabled = pytest.mark.skipif(True, reason="disabled")
 slow = pytest.mark.skipif(not os.environ.get("SLOW"), reason="slow")
-
-
-@pytest.fixture(name="drive")
-def drive_() -> GoogleDriveAPI:
-    return GoogleDriveAPI()
 
 
 def run_cli(options: list[str]) -> None:
@@ -23,7 +18,7 @@ def run_cli(options: list[str]) -> None:
     if options:
         sys.argv += options
     print(f"\nRunning {sys.argv!r}", flush=True)
-    GoogleDriveCLI().main()
+    main()
 
 
 def test_gdrive_no_args() -> None:
@@ -32,40 +27,27 @@ def test_gdrive_no_args() -> None:
     assert err.value.code == 2
 
 
+@pytest.fixture(name="drive")
+def drive_() -> GoogleDriveAPI:
+    options = Namespace(
+        all_fields=False,
+        no_action=True,
+        target_folder=None,
+        target_basename=None,
+    )
+    return GoogleDriveAPI(options)
+
+
 @pytest.fixture(name="args")
 def fixture_args():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument("--no-action", action="store_true")
     parser.add_argument("target_folder", nargs="?")
     parser.add_argument("target_basename", nargs="?")
     return parser.parse_args([])
 
 
-# @pytest.mark.build
-@pytest.mark.parametrize(
-    "path",
-    [
-        "/",
-        # "/test-data",
-        # "/test-data/test-doc",
-        # "/My Drive/",
-        # "/My Drive/test-data",
-        # "/My Drive/test-data/test-doc",
-    ],
-)
-def test_list_1(drive, path):
-    print()
-    for _ in drive.list(path):
-        print(_["PATH"])
-
-
-def test_list_2(drive):
-    print()
-    path = "/test-data"
-    for _ in drive.list(path, recursive=True):
-        print(_["PATH"])
-
-
+@disabled
 @pytest.mark.parametrize("path", ["/tmp/a/a/", "/tmp/a/b/", "/tmp/b/a/", "/tmp/b/b/"])
 def test_makedirs_1(drive, path, args):
     print()
@@ -207,7 +189,93 @@ def test_download_1(drive, path, args):
     print(f"download({path!r}) returned {_!r}")
 
 
-# @pytest.mark.build
-def test_about(drive):
-    print()
-    print(drive.about())
+# -------------------------------------------------------------------------------
+
+
+def test_about_no_args():
+    run_cli(["about"])
+
+
+def test_about_all_fields():
+    run_cli(["--all-fields", "about"])
+
+
+def test_about_pretty_print():
+    run_cli(["about", "--pretty-print"])
+
+
+def test_about_no_themes_pretty_print():
+    run_cli(["about", "--no-themes", "--pretty-print"])
+
+
+# -------------------------------------------------------------------------------
+
+
+@slow
+def test_files_no_args():
+    run_cli(["files"])
+
+
+@slow
+def test_files_long_listing():
+    run_cli(["files", "--long-listing"])
+
+
+@slow
+def test_files_pretty_print_limit_2():
+    run_cli(["files", "--pretty-print", "--limit", "2"])
+
+
+# -------------------------------------------------------------------------------
+
+
+def test_folders_no_args():
+    run_cli(["folders"])
+
+
+def test_folders_long_listing():
+    run_cli(["folders", "--long-listing"])
+
+
+def test_folders_pretty_print_limit_2():
+    run_cli(["folders", "--pretty-print", "--limit", "2"])
+
+
+# -------------------------------------------------------------------------------
+
+
+def test_list_no_args():
+    with pytest.raises(SystemExit) as err:
+        run_cli(["list"])
+    assert err.value.code == 2
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/",
+        "/test-data",
+        "/test-data/test-doc",
+        "/My Drive/",
+        "/My Drive/test-data",
+        "/My Drive/test-data/test-doc",
+    ],
+)
+def test_list(path):
+    run_cli(["list", path])
+
+
+def test_list_recursive():
+    run_cli(["list", "-R", "/test-data"])
+
+
+def test_list_time_root():
+    run_cli(["list", "--time", "/test-data"])
+
+
+def test_list_long_listing_root():
+    run_cli(["list", "--long-listing", "/"])
+
+
+def test_list_pretty_print_limit_2_root():
+    run_cli(["list", "--pretty-print", "--limit", "2", "/"])

@@ -2,15 +2,13 @@
 
 import os
 import time
+from argparse import Namespace
 
 import xdg
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from loguru import logger
 
 from gdrive.google import connect_to_google
-
-# from typing import Any, Iterator
-
 
 __all__ = ["GoogleDriveAPI"]
 
@@ -62,16 +60,12 @@ class GoogleDriveAPI:
         ]
     )
 
-    def __init__(self, all_fields=False):
-        """Connect to Google Drive.
+    def __init__(self, options: Namespace) -> None:
+        """Connect to Google Drive."""
 
-        Args:
-            all_fields:     Use parms['fields'] = '*'; (verbose)
-        """
-
+        self.options = options
         self.service = connect_to_google("drive", "v3")
         self.download_dir = xdg.xdg_data_home() / "pygoogle-gdrive"
-        self.all_fields = all_fields
 
         # Properties
         self._root_folder = None
@@ -97,10 +91,9 @@ class GoogleDriveAPI:
         # https://developers.google.com/drive/api/v3/reference/files/get
         parms = {}
         parms["fileId"] = id
-        parms["fields"] = "*" if self.all_fields else self._FILE_ATTRS
+        parms["fields"] = "*" if self.options.all_fields else self._FILE_ATTRS
 
         logger.debug("service.files().get({!r})", parms)
-        # noqa: PLE101 Instance of 'Resource' has no 'files' member
         response = self.service.files().get(**parms).execute()  # noqa: PLE101
         logger.trace("response {!r}", response)
 
@@ -137,7 +130,9 @@ class GoogleDriveAPI:
         # https://developers.google.com/drive/api/v3/reference/files/list
         parms = {}
         parms["fields"] = (
-            "*" if self.all_fields else "nextPageToken, files({})".format(self._FILE_ATTRS)
+            "*"
+            if self.options.all_fields
+            else "nextPageToken, files({})".format(self._FILE_ATTRS)
         )
         parms["q"] = "not trashed"
         parms["q"] += ' and mimeType="{:s}"'.format(self._GOOGLE_MIMETYPE_FOLDER)
@@ -145,7 +140,6 @@ class GoogleDriveAPI:
         folders = []
         while True:
             logger.debug("service.files().list({!r})", parms)
-            # noqa: PLE101 Instance of 'Resource' has no 'files' member
             response = self.service.files().list(**parms).execute()  # noqa: PLE101
             logger.trace("response {!r}", response)
 
@@ -217,7 +211,9 @@ class GoogleDriveAPI:
         # https://developers.google.com/drive/api/v3/reference/files/list
         parms = {}
         parms["fields"] = (
-            "*" if self.all_fields else "nextPageToken, files({})".format(self._FILE_ATTRS)
+            "*"
+            if self.options.all_fields
+            else "nextPageToken, files({})".format(self._FILE_ATTRS)
         )
         parms["q"] = "not trashed"
         parms["q"] += ' and mimeType!="{:s}"'.format(self._GOOGLE_MIMETYPE_FOLDER)
@@ -225,7 +221,6 @@ class GoogleDriveAPI:
         items = []
         while True:
             logger.debug("service.files().list({!r})", parms)
-            # noqa: PLE101 Instance of 'Resource' has no 'files' member
             response = self.service.files().list(**parms).execute()  # noqa: PLE101
             logger.trace("response {!r}", response)
 
@@ -333,7 +328,9 @@ class GoogleDriveAPI:
 
         parms = {}
         parms["fields"] = (
-            "*" if self.all_fields else "nextPageToken, files({})".format(self._FILE_ATTRS)
+            "*"
+            if self.options.all_fields
+            else "nextPageToken, files({})".format(self._FILE_ATTRS)
         )
         parms["q"] = "not trashed"
 
@@ -353,7 +350,6 @@ class GoogleDriveAPI:
 
         while True:
             logger.debug("service.files().list({!r})", parms)
-            # noqa: PLE101 Instance of 'Resource' has no 'files' member
             response = self.service.files().list(**parms).execute()  # noqa: PLE101
             logger.trace("response {!r}", response)
 
@@ -443,7 +439,6 @@ class GoogleDriveAPI:
             return response
 
         logger.info("service.files().create({!r})", parms)
-        # noqa: PLE101 Instance of 'Resource' has no 'files' member
         response = self.service.files().create(**parms).execute()  # noqa: PLE101
         logger.debug("response {!r}", response)
 
@@ -512,7 +507,6 @@ class GoogleDriveAPI:
                 return None
 
             logger.debug("service.files().export_media({!r})", parms)
-            # noqa: PLE101 Instance of 'Resource' has no 'files' member
             request = self.service.files().export_media(**parms)  # noqa: PLE101
 
         else:
@@ -525,7 +519,6 @@ class GoogleDriveAPI:
                 return None
 
             logger.debug("service.files().get_media({!r})", parms)
-            # noqa: PLE101 Instance of 'Resource' has no 'files' member
             request = self.service.files().get_media(**parms)  # noqa: PLE101
 
         #
@@ -584,7 +577,7 @@ class GoogleDriveAPI:
         # https://developers.google.com/drive/api/v3/reference/files/create\#request-body
         parms = {}
         parms["media_body"] = MediaFileUpload(file.pathname)
-        parms["fields"] = "*" if self.all_fields else self._FILE_ATTRS
+        parms["fields"] = "*" if self.options.all_fields else self._FILE_ATTRS
         parms["body"] = {}
         parms["body"]["name"] = target_basename
         if target_folder:
@@ -620,7 +613,6 @@ class GoogleDriveAPI:
             logger.debug("service.files().create({!r})", parms)
 
             try:
-                # noqa: PLE101 Instance of 'Resource' has no 'files' member
                 response = self.service.files().create(**parms).execute()  # noqa: PLE101
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error("{!r} {}", target_pathname, e)
@@ -675,7 +667,6 @@ class GoogleDriveAPI:
         else:
             logger.info("Renaming {!r} -> {!r}", oldpath, newpath)
             logger.debug("service.files().update({!r})", parms)
-            # noqa: PLE101 Instance of 'Resource' has no 'files' member
             response = self.service.files().update(**parms).execute()  # noqa: PLE101
             logger.trace("response {!r}", response)
 
@@ -684,10 +675,9 @@ class GoogleDriveAPI:
 
         # https://developers.google.com/drive/api/v3/reference/about/get
         parms = {}
-        parms["fields"] = "*" if self.all_fields else "storageQuota, user"
+        parms["fields"] = "*" if self.options.all_fields else "storageQuota, user"
 
         logger.debug("service.about().get({!r})", parms)
-        # noqa: PLE101 Instance of 'Resource' has no 'files' member
         response = self.service.about().get(**parms).execute()  # noqa: PLE101
         logger.trace("response {!r}", response)
 

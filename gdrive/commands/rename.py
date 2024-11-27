@@ -1,9 +1,9 @@
 """Drive `rename` command module."""
 
-from libcli import BaseCmd
+from gdrive.commands import GoogleDriveCmd
 
 
-class DriveRenameCmd(BaseCmd):
+class DriveRenameCmd(GoogleDriveCmd):
     """Drive `rename` command class."""
 
     def init_command(self) -> None:
