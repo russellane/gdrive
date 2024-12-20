@@ -14,7 +14,7 @@ class GoogleDriveCLI(BaseCLI):
 
     config = {
         # name of config file.
-        "config-file": Path("~/.pygoogle.toml"),
+        "config-file": Path("~/.libgoogle.toml"),
         # toml [section-name].
         "config-name": "gdrive",
         # distribution name, not importable package name

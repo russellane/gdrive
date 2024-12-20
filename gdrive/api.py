@@ -6,9 +6,8 @@ from argparse import Namespace
 
 import xdg
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from libgoogle import connect_to_google
 from loguru import logger
-
-from gdrive.google import connect_to_google
 
 __all__ = ["GoogleDriveAPI"]
 
@@ -65,7 +64,7 @@ class GoogleDriveAPI:
 
         self.options = options
         self.service = connect_to_google("drive", "v3")
-        self.download_dir = xdg.xdg_data_home() / "pygoogle-gdrive"
+        self.download_dir = xdg.xdg_data_home() / "gdrive"
 
         # Properties
         self._root_folder = None

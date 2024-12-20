@@ -27,7 +27,7 @@ General options:
   -H, --long-help       Show help for all commands and exit.
   -v, --verbose         `-v` for detailed output and `-vv` for more detailed.
   -V, --version         Print version number and exit.
-  --config FILE         Use config `FILE` (default: `~/.pygoogle.toml`).
+  --config FILE         Use config `FILE` (default: `~/.libgoogle.toml`).
   --print-config        Print effective config and exit.
   --print-url           Print project url and exit.
   --completion [SHELL]  Print completion scripts for `SHELL` and exit
