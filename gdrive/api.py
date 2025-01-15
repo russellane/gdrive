@@ -4,9 +4,9 @@ import os
 import time
 from argparse import Namespace
 
+import libgoogle
 import xdg
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-from libgoogle import connect_to_google
 from loguru import logger
 
 __all__ = ["GoogleDriveAPI"]
@@ -63,7 +63,7 @@ class GoogleDriveAPI:
         """Connect to Google Drive."""
 
         self.options = options
-        self.service = connect_to_google("drive", "v3")
+        self.service = libgoogle.connect("drive", "v3")
         self.download_dir = xdg.xdg_data_home() / "gdrive"
 
         # Properties
