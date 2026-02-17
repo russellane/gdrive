@@ -70,6 +70,7 @@ class GoogleDriveCmd(BaseCmd):
         """Return name of last user to modify this item."""
 
         try:
-            return item["lastModifyingUser"]["displayName"]
+            result: str = item["lastModifyingUser"]["displayName"]
+            return result
         except KeyError:
             return "?"

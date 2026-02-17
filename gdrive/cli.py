@@ -1,6 +1,7 @@
 """Command Line Interface to Google Drive."""
 
 from pathlib import Path
+from typing import Any
 
 from libcli import BaseCLI
 
@@ -12,7 +13,7 @@ __all__ = ["GoogleDriveCLI"]
 class GoogleDriveCLI(BaseCLI):
     """Command Line Interface to Google Drive."""
 
-    config = {
+    config: dict[str, Any] = {
         # name of config file.
         "config-file": Path("~/.libgoogle.toml"),
         # toml [section-name].

@@ -39,7 +39,7 @@ def drive_() -> GoogleDriveAPI:
 
 
 @pytest.fixture(name="args")
-def fixture_args():
+def fixture_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--no-action", action="store_true")
     parser.add_argument("target_folder", nargs="?")
@@ -49,7 +49,7 @@ def fixture_args():
 
 @disabled
 @pytest.mark.parametrize("path", ["/tmp/a/a/", "/tmp/a/b/", "/tmp/b/a/", "/tmp/b/b/"])
-def test_makedirs_1(drive, path, args):
+def test_makedirs_1(drive: GoogleDriveAPI, path: str, args: Namespace) -> None:
     print()
     _ = drive.makedirs(args, path)
     print(f"makedirs({path!r}) returned {_!r}")
@@ -60,7 +60,7 @@ def test_makedirs_1(drive, path, args):
 
 
 @disabled
-def test_round_trip_1(drive, args):
+def test_round_trip_1(drive: GoogleDriveAPI, args: Namespace) -> None:
     print()
 
     name = "/test-data/test-doc"
@@ -68,7 +68,7 @@ def test_round_trip_1(drive, args):
     print(str.format("name {} local {}", name, local_filename))
 
     args.target_folder = "/tmp"
-    remote_filename = drive.upload(args, local_filename)[0]
+    remote_filename = drive.upload(args, local_filename)
     print(str.format("name {} local {} remote {}", name, local_filename, remote_filename))
 
     name = "/tmp/test-doc.docx"
@@ -77,7 +77,7 @@ def test_round_trip_1(drive, args):
 
     args.target_folder_path = "/tmp"
     args.target_filename = "bobo"
-    remote_filename = drive.upload(args, local_filename)[0]
+    remote_filename = drive.upload(args, local_filename)
     print(str.format("name {} local {} remote {}", name, local_filename, remote_filename))
 
 
@@ -183,7 +183,7 @@ def test_round_trip_1(drive, args):
     "path",
     ["/tmp/bobo", "20190823_170238.jpg", "/tmp/20190823_170238.jpg"],
 )
-def test_download_1(drive, path, args):
+def test_download_1(drive: GoogleDriveAPI, path: str, args: Namespace) -> None:
     print()
     _ = drive.download(args, path)
     print(f"download({path!r}) returned {_!r}")
@@ -192,19 +192,19 @@ def test_download_1(drive, path, args):
 # -------------------------------------------------------------------------------
 
 
-def test_about_no_args():
+def test_about_no_args() -> None:
     run_cli(["about"])
 
 
-def test_about_all_fields():
+def test_about_all_fields() -> None:
     run_cli(["--all-fields", "about"])
 
 
-def test_about_pretty_print():
+def test_about_pretty_print() -> None:
     run_cli(["about", "--pretty-print"])
 
 
-def test_about_no_themes_pretty_print():
+def test_about_no_themes_pretty_print() -> None:
     run_cli(["about", "--no-themes", "--pretty-print"])
 
 
@@ -212,39 +212,39 @@ def test_about_no_themes_pretty_print():
 
 
 @slow
-def test_files_no_args():
+def test_files_no_args() -> None:
     run_cli(["files"])
 
 
 @slow
-def test_files_long_listing():
+def test_files_long_listing() -> None:
     run_cli(["files", "--long-listing"])
 
 
 @slow
-def test_files_pretty_print_limit_2():
+def test_files_pretty_print_limit_2() -> None:
     run_cli(["files", "--pretty-print", "--limit", "2"])
 
 
 # -------------------------------------------------------------------------------
 
 
-def test_folders_no_args():
+def test_folders_no_args() -> None:
     run_cli(["folders"])
 
 
-def test_folders_long_listing():
+def test_folders_long_listing() -> None:
     run_cli(["folders", "--long-listing"])
 
 
-def test_folders_pretty_print_limit_2():
+def test_folders_pretty_print_limit_2() -> None:
     run_cli(["folders", "--pretty-print", "--limit", "2"])
 
 
 # -------------------------------------------------------------------------------
 
 
-def test_list_no_args():
+def test_list_no_args() -> None:
     with pytest.raises(SystemExit) as err:
         run_cli(["list"])
     assert err.value.code == 2
@@ -261,21 +261,21 @@ def test_list_no_args():
         "/My Drive/test-data/test-doc",
     ],
 )
-def test_list(path):
+def test_list(path: str) -> None:
     run_cli(["list", path])
 
 
-def test_list_recursive():
+def test_list_recursive() -> None:
     run_cli(["list", "-R", "/test-data"])
 
 
-def test_list_time_root():
+def test_list_time_root() -> None:
     run_cli(["list", "--time", "/test-data"])
 
 
-def test_list_long_listing_root():
+def test_list_long_listing_root() -> None:
     run_cli(["list", "--long-listing", "/"])
 
 
-def test_list_pretty_print_limit_2_root():
+def test_list_pretty_print_limit_2_root() -> None:
     run_cli(["list", "--pretty-print", "--limit", "2", "/"])

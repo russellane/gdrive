@@ -83,8 +83,8 @@ class DriveUploadlistCmd(GoogleDriveCmd):
 
                 self.options.target_folder = os.path.dirname(target)
 
-                file = File(src)
+                upload_file = File(src)
 
                 # logger.error('src {!r} target_folder {!r}', file, self.options.target_folder)
 
-                self.cli.api.upload(self.options, file)
+                self.cli.api.upload(self.options, upload_file)

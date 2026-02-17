@@ -28,7 +28,6 @@ class DriveAboutCmd(GoogleDriveCmd):
 
         if self.options.no_themes:
             self.options.all_fields = True
-            self.cli.api.all_fields = True
 
         about = self.cli.api.about()
 

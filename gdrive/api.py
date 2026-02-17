@@ -1,15 +1,24 @@
 """Interface to Google Drive."""
 
+import builtins
 import os
 import time
 from argparse import Namespace
+from collections.abc import Generator
+from typing import Any
 
 import libgoogle
 import xdg
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from googleapiclient.http import (  # type: ignore[import-untyped]
+    MediaFileUpload,
+    MediaIoBaseDownload,
+)
 from loguru import logger
 
 __all__ = ["GoogleDriveAPI"]
+
+# Type alias for Google Drive items (files/folders as dicts)
+DriveItem = dict[str, Any]
 
 
 class GoogleDriveAPI:
@@ -21,12 +30,12 @@ class GoogleDriveAPI:
     _GOOGLE_MIMETYPE_FOLDER = "application/vnd.google-apps.folder"
 
     @classmethod
-    def is_folder(cls, file):
+    def is_folder(cls, file: DriveItem) -> bool:
         """Return True if mimetype is a Google Drive Folder."""
-        return file["mimeType"] == cls._GOOGLE_MIMETYPE_FOLDER
+        return file["mimeType"] == cls._GOOGLE_MIMETYPE_FOLDER  # type: ignore[no-any-return]
 
-    _GOOGLE_MIMETYPES = {}
-    for file in (
+    _GOOGLE_MIMETYPES: dict[str, dict[str, str]] = {}
+    for _file in (
         {
             "extension": ".docx",
             "google": "application/vnd.google-apps.document",
@@ -43,9 +52,9 @@ class GoogleDriveAPI:
             "openxml": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         },
     ):
-        _GOOGLE_MIMETYPES[file["extension"]] = file
-        _GOOGLE_MIMETYPES[file["google"]] = file
-        _GOOGLE_MIMETYPES[file["openxml"]] = file
+        _GOOGLE_MIMETYPES[_file["extension"]] = _file
+        _GOOGLE_MIMETYPES[_file["google"]] = _file
+        _GOOGLE_MIMETYPES[_file["openxml"]] = _file
 
     _FILE_ATTRS = ", ".join(
         [
@@ -63,18 +72,18 @@ class GoogleDriveAPI:
         """Connect to Google Drive."""
 
         self.options = options
-        self.service = libgoogle.connect("drive", "v3")
+        self.service: Any = libgoogle.connect("drive", "v3")
         self.download_dir = xdg.xdg_data_home() / "gdrive"
 
         # Properties
-        self._root_folder = None
-        self._shared_with_me_folder = None
-        self._all_folders = None
-        self._all_files = None
-        self._items_by_id = None
+        self._root_folder: DriveItem | None = None
+        self._shared_with_me_folder: DriveItem | None = None
+        self._all_folders: list[DriveItem] | None = None
+        self._all_files: list[DriveItem] | None = None
+        self._items_by_id: dict[str, DriveItem] | None = None
 
     @property
-    def root_folder(self):
+    def root_folder(self) -> DriveItem:
         """Return the top-level folder, a.k.a. ``My Drive``."""
 
         if not self._root_folder:
@@ -84,22 +93,22 @@ class GoogleDriveAPI:
 
         return self._root_folder
 
-    def _get_item_by_id(self, id):
+    def _get_item_by_id(self, id: str) -> DriveItem:
         """Return item with matching ``id``."""
 
         # https://developers.google.com/drive/api/v3/reference/files/get
-        parms = {}
+        parms: dict[str, str] = {}
         parms["fileId"] = id
         parms["fields"] = "*" if self.options.all_fields else self._FILE_ATTRS
 
         logger.debug("service.files().get({!r})", parms)
-        response = self.service.files().get(**parms).execute()  # noqa: PLE101
+        response: DriveItem = self.service.files().get(**parms).execute()  # noqa: PLE101
         logger.trace("response {!r}", response)
 
         return response
 
     @property
-    def shared_with_me_folder(self):
+    def shared_with_me_folder(self) -> DriveItem:
         """Return pseudo-folder for items ``Shared with me``."""
 
         if not self._shared_with_me_folder:
@@ -120,14 +129,14 @@ class GoogleDriveAPI:
         return self._shared_with_me_folder
 
     @property
-    def all_folders(self):
+    def all_folders(self) -> list[DriveItem]:
         """Return list of all folders sorted by ``PATH``."""
 
         if self._all_folders:
             return self._all_folders
 
         # https://developers.google.com/drive/api/v3/reference/files/list
-        parms = {}
+        parms: dict[str, Any] = {}
         parms["fields"] = (
             "*"
             if self.options.all_fields
@@ -180,9 +189,11 @@ class GoogleDriveAPI:
         self._all_folders = sorted(self._items_by_id.values(), key=lambda _: _["PATH"].lower())
         return self._all_folders
 
-    def _add_folder(self, folder):
+    def _add_folder(self, folder: DriveItem) -> None:
         """Add folder to list of all folders, maintaining sort order."""
 
+        assert self._all_folders is not None
+        assert self._items_by_id is not None
         for index, value in enumerate(self._all_folders):
             if value["PATH"] > folder["PATH"]:
                 self._all_folders.insert(index, folder)
@@ -192,14 +203,14 @@ class GoogleDriveAPI:
         self._all_folders.append(folder)
         self._items_by_id[folder["id"]] = folder
 
-    def _lookup_folder_by_path(self, path):
+    def _lookup_folder_by_path(self, path: str) -> DriveItem | None:
         """Return the folder with the matching ``PATH``."""
 
         folders = [x for x in self.all_folders if x["PATH"] == path]
         return folders[0] if folders else None
 
     @property
-    def all_files(self):
+    def all_files(self) -> list[DriveItem]:
         """Return list of all files sorted by ``PATH``."""
 
         if self._all_files:
@@ -208,7 +219,7 @@ class GoogleDriveAPI:
         _ = self.all_folders
 
         # https://developers.google.com/drive/api/v3/reference/files/list
-        parms = {}
+        parms: dict[str, Any] = {}
         parms["fields"] = (
             "*"
             if self.options.all_fields
@@ -231,6 +242,7 @@ class GoogleDriveAPI:
                 break
 
         # point each item to its parent
+        assert self._items_by_id is not None
         for item in items:
             ids = item.get("parents")
             item["PARENT"] = self._items_by_id[ids[0]] if ids else self.shared_with_me_folder
@@ -241,7 +253,13 @@ class GoogleDriveAPI:
 
         return self._all_files
 
-    def list(self, path, files_only=False, folders_only=False, recursive=False):
+    def list(
+        self,
+        path: str,
+        files_only: bool = False,
+        folders_only: bool = False,
+        recursive: bool = False,
+    ) -> Generator[DriveItem, None, None]:
         """Generate list of items at ``PATH``."""
 
         path = self._normalize_drive_path(path)
@@ -267,7 +285,7 @@ class GoogleDriveAPI:
         if not nitems:
             logger.error("FileNotFoundError {!r}", path)
 
-    def _normalize_drive_path(self, path):
+    def _normalize_drive_path(self, path: str) -> str:
         """Normalize path to be absolute, fully-qualified from the root."""
 
         # remove leading and trailing slashes.
@@ -290,7 +308,7 @@ class GoogleDriveAPI:
 
         return path
 
-    def _get_items_at_path(self, path):
+    def _get_items_at_path(self, path: str) -> Generator[DriveItem, None, None]:
         """Return items at ``path``."""
 
         # does path refer to a folder?
@@ -313,19 +331,19 @@ class GoogleDriveAPI:
 
     def _search(
         self,
-        parent,
-        name=None,
-        files_only=False,
-        folders_only=False,
-        recursive=False,
-    ):
+        parent: DriveItem | None,
+        name: str | None = None,
+        files_only: bool = False,
+        folders_only: bool = False,
+        recursive: bool = False,
+    ) -> Generator[DriveItem, None, None]:
         """Generate list of matching items."""
 
         # pylint: disable=too-many-positional-arguments
 
         # https://developers.google.com/drive/api/v3/reference/files/list
 
-        parms = {}
+        parms: dict[str, Any] = {}
         parms["fields"] = (
             "*"
             if self.options.all_fields
@@ -358,7 +376,14 @@ class GoogleDriveAPI:
             if parms["pageToken"] is None:
                 return
 
-    def _list(self, parent, path, files_only, folders_only, recursive):
+    def _list(
+        self,
+        parent: DriveItem,
+        path: str,
+        files_only: bool,
+        folders_only: bool,
+        recursive: bool,
+    ) -> Generator[DriveItem, None, None]:
         """Generate list of items at ``path``, which must be an existing drive folder."""
 
         # pylint: disable=too-many-positional-arguments
@@ -393,7 +418,7 @@ class GoogleDriveAPI:
             subfolder = os.path.join(path, folder["name"])
             yield from self.list(subfolder, files_only, folders_only, recursive)
 
-    def makedirs(self, args, path):
+    def makedirs(self, args: Namespace, path: str) -> DriveItem | None:
         """Create folder.
 
         No error if existing, make parent directories as needed; (like ``mkdir -p path``)
@@ -403,7 +428,7 @@ class GoogleDriveAPI:
         folders = [x for x in path.split(os.path.sep) if x]
 
         parent = self.root_folder
-        folder = None
+        folder: DriveItem | None = None
 
         for name in folders[1:]:
             path = os.path.join(parent["PATH"], name)
@@ -414,12 +439,12 @@ class GoogleDriveAPI:
 
         return folder
 
-    def _create_folder(self, args, name, parent):
+    def _create_folder(self, args: Namespace, name: str, parent: DriveItem) -> DriveItem:
         """Create folder ``name`` in folder ``parent``."""
 
         # https://developers.google.com/drive/api/v3/reference/files/create
 
-        parms = {
+        parms: dict[str, Any] = {
             "body": {
                 "name": name,
                 "mimeType": self._GOOGLE_MIMETYPE_FOLDER,
@@ -430,7 +455,7 @@ class GoogleDriveAPI:
 
         if args.no_action:
             logger.warning("Not running service.files().create({!r})", parms)
-            response = {"FAKE-FOLDER": "--no-action"}
+            response: DriveItem = {"FAKE-FOLDER": "--no-action"}
             response["PATH"] = os.path.join(parent["PATH"], name)
             response["PARENT"] = parent
             args.no_action += 1
@@ -442,7 +467,7 @@ class GoogleDriveAPI:
         logger.debug("response {!r}", response)
 
         # Update cache
-        id = response.get("id")
+        id: str = response["id"]
         folder = self._get_item_by_id(id)
         folder["PATH"] = os.path.join(parent["PATH"], folder["name"])
         folder["PARENT"] = parent
@@ -450,7 +475,9 @@ class GoogleDriveAPI:
 
         return folder
 
-    def download(self, args, path, rename=None):
+    def download(
+        self, args: Namespace, path: str, rename: str | None = None
+    ) -> builtins.list[str | None]:
         """Copy file at ``path`` from google drive to current working directory.
 
         Returns name of new file.
@@ -459,7 +486,7 @@ class GoogleDriveAPI:
         path = self._normalize_drive_path(path)
 
         #
-        target_filenames = []
+        target_filenames: builtins.list[str | None] = []
         for item in self._get_items_at_path(path):
             target_filenames.append(
                 self._download(args, item, path, rename, len(target_filenames))
@@ -470,7 +497,14 @@ class GoogleDriveAPI:
 
         return target_filenames
 
-    def _download(self, args, file, path, rename, itemno):
+    def _download(
+        self,
+        args: Namespace,
+        file: DriveItem,
+        path: str,
+        rename: str | None,
+        itemno: int,
+    ) -> str | None:
         """docstring."""
 
         # pylint: disable=too-many-positional-arguments
@@ -496,7 +530,7 @@ class GoogleDriveAPI:
                 target_filename = root + "(" + str(itemno + 1) + ")" + ext
 
             # https://developers.google.com/drive/api/v3/reference/files/export
-            parms = {}
+            parms: dict[str, str] = {}
             parms["fileId"] = file["id"]
             parms["mimeType"] = gmt["openxml"]
             logger.debug("Converting {!r} -> {!r}", file["mimeType"], parms["mimeType"])
@@ -533,7 +567,7 @@ class GoogleDriveAPI:
 
         return target_filename
 
-    def upload(self, args, file):
+    def upload(self, args: Namespace, file: Any) -> DriveItem:
         """Upload single regular file.
 
              Any looping or walking of the filesystem is for the caller to do.
@@ -556,7 +590,7 @@ class GoogleDriveAPI:
         # assert file.isfile
 
         #
-        target_folder_pathname = (
+        target_folder_pathname: str = (
             args.target_folder if args.target_folder else self.root_folder["PATH"]
         )
 
@@ -574,7 +608,7 @@ class GoogleDriveAPI:
             target_folder = self.makedirs(args, target_folder_pathname)
 
         # https://developers.google.com/drive/api/v3/reference/files/create\#request-body
-        parms = {}
+        parms: dict[str, Any] = {}
         parms["media_body"] = MediaFileUpload(file.pathname)
         parms["fields"] = "*" if self.options.all_fields else self._FILE_ATTRS
         parms["body"] = {}
@@ -594,6 +628,8 @@ class GoogleDriveAPI:
                 )
             else:
                 try:
+                    import magic  # noqa: PLC415
+
                     # `/usr/bin/file file | grep -q ASCII`
                     magic_string = magic.from_buffer(open(file).read(1024))  # noqa:
                     if magic_string.find("ASCII") >= 0:
@@ -604,6 +640,7 @@ class GoogleDriveAPI:
                 except Exception:  # pylint: disable=broad-exception-caught
                     pass
 
+        response: DriveItem
         if args.no_action:
             logger.warning("Not running service.files().create({!r})", parms)
             response = {"FAKE-FILE": "--no-action"}
@@ -622,7 +659,7 @@ class GoogleDriveAPI:
         response["PARENT"] = target_folder
         return response  # https://developers.google.com/drive/api/v3/reference/files\#resource
 
-    def rename(self, args, oldpath, newpath):
+    def rename(self, args: Namespace, oldpath: str, newpath: str) -> None:
         """Docstring."""
 
         oldpath = self._normalize_drive_path(oldpath)
@@ -631,7 +668,7 @@ class GoogleDriveAPI:
         newhead, newtail = os.path.split(newpath)
 
         # make sure old file exists
-        old = None
+        old: DriveItem | None = None
         for old in self._get_items_at_path(oldpath):  # noqa:
             break
         if not old:
@@ -652,7 +689,8 @@ class GoogleDriveAPI:
 
         # https://developers.google.com/drive/api/v3/reference/files/update
 
-        parms = {}
+        assert target_folder is not None
+        parms: dict[str, Any] = {}
         parms["fileId"] = old["id"]
         parms["addParents"] = target_folder["id"]
         parms["removeParents"] = old["PARENT"]["id"]
@@ -669,15 +707,15 @@ class GoogleDriveAPI:
             response = self.service.files().update(**parms).execute()  # noqa: PLE101
             logger.trace("response {!r}", response)
 
-    def about(self):
+    def about(self) -> DriveItem:
         """Get and return information about the google user and drive."""
 
         # https://developers.google.com/drive/api/v3/reference/about/get
-        parms = {}
+        parms: dict[str, str] = {}
         parms["fields"] = "*" if self.options.all_fields else "storageQuota, user"
 
         logger.debug("service.about().get({!r})", parms)
-        response = self.service.about().get(**parms).execute()  # noqa: PLE101
+        response: DriveItem = self.service.about().get(**parms).execute()  # noqa: PLE101
         logger.trace("response {!r}", response)
 
         return response

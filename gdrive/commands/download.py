@@ -35,10 +35,11 @@ class DriveDownloadCmd(GoogleDriveCmd):
         for target_filename in self.cli.api.download(
             self.options, self.options.file, self.options.rename
         ):
-            self._ls_minus_el(target_filename)
+            if target_filename:
+                self._ls_minus_el(target_filename)
 
     @staticmethod
-    def _ls_minus_el(path) -> None:
+    def _ls_minus_el(path: str) -> None:
         """Run `ls -l` on given `path`."""
 
         os.system("/bin/ls -l " + path)
