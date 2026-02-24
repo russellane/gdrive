@@ -24,7 +24,6 @@ class DriveFoldersCmd(GoogleDriveCmd):
         """Run drive `folders` command."""
 
         for folder in self.cli.api.all_folders:
-
             if self.check_limit():
                 break
 

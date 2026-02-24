@@ -24,7 +24,6 @@ class DriveFilesCmd(GoogleDriveCmd):
         """Run drive `files` command."""
 
         for file in self.cli.api.all_files:
-
             if self.check_limit():
                 break
 

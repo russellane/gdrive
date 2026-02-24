@@ -57,7 +57,6 @@ class DriveListCmd(GoogleDriveCmd):
             self.options.folders_only,
             self.options.recursive,
         ):
-
             if self.check_limit():
                 break
 

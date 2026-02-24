@@ -21,7 +21,8 @@ __all__ = ["GoogleDriveAPI"]
 DriveItem = dict[str, Any]
 
 
-class GoogleDriveAPI:
+# Too many instance attributes; mirrors the breadth of the Drive API surface.
+class GoogleDriveAPI:  # noqa: PLR0902
     """Interface to Google Drive.
 
     See https://developers.google.com/gdrive/api/v1/reference
@@ -93,16 +94,16 @@ class GoogleDriveAPI:
 
         return self._root_folder
 
-    def _get_item_by_id(self, id: str) -> DriveItem:
+    def _get_item_by_id(self, file_id: str) -> DriveItem:
         """Return item with matching ``id``."""
 
         # https://developers.google.com/drive/api/v3/reference/files/get
         parms: dict[str, str] = {}
-        parms["fileId"] = id
+        parms["fileId"] = file_id
         parms["fields"] = "*" if self.options.all_fields else self._FILE_ATTRS
 
         logger.debug("service.files().get({!r})", parms)
-        response: DriveItem = self.service.files().get(**parms).execute()  # noqa: PLE101
+        response: DriveItem = self.service.files().get(**parms).execute()
         logger.trace("response {!r}", response)
 
         return response
@@ -112,7 +113,6 @@ class GoogleDriveAPI:
         """Return pseudo-folder for items ``Shared with me``."""
 
         if not self._shared_with_me_folder:
-
             name = "Shared with me"
 
             self._shared_with_me_folder = {
@@ -148,7 +148,7 @@ class GoogleDriveAPI:
         folders = []
         while True:
             logger.debug("service.files().list({!r})", parms)
-            response = self.service.files().list(**parms).execute()  # noqa: PLE101
+            response = self.service.files().list(**parms).execute()
             logger.trace("response {!r}", response)
 
             files = response.get("files", [])
@@ -231,7 +231,7 @@ class GoogleDriveAPI:
         items = []
         while True:
             logger.debug("service.files().list({!r})", parms)
-            response = self.service.files().list(**parms).execute()  # noqa: PLE101
+            response = self.service.files().list(**parms).execute()
             logger.trace("response {!r}", response)
 
             files = response.get("files", [])
@@ -266,10 +266,9 @@ class GoogleDriveAPI:
 
         nitems = 0  # noqa
         for item in self._get_items_at_path(path):
-            nitems += 1  # noqa:
+            nitems += 1
 
             if self.is_folder(item):
-
                 if not files_only:
                     # yield the folder
                     yield item
@@ -277,10 +276,9 @@ class GoogleDriveAPI:
                 # yield the folder's contents
                 yield from self._list(item, path, files_only, folders_only, recursive)
 
-            else:
-                if not folders_only:
-                    # yield the file
-                    yield item
+            elif not folders_only:
+                # yield the file
+                yield item
 
         if not nitems:
             logger.error("FileNotFoundError {!r}", path)
@@ -329,7 +327,8 @@ class GoogleDriveAPI:
             item["PARENT"] = folder
             yield item
 
-    def _search(
+    # Too many arguments; search requires many orthogonal filter parameters.
+    def _search(  # noqa: PLR0913, PLR0917
         self,
         parent: DriveItem | None,
         name: str | None = None,
@@ -338,8 +337,6 @@ class GoogleDriveAPI:
         recursive: bool = False,
     ) -> Generator[DriveItem, None, None]:
         """Generate list of matching items."""
-
-        # pylint: disable=too-many-positional-arguments
 
         # https://developers.google.com/drive/api/v3/reference/files/list
 
@@ -367,7 +364,7 @@ class GoogleDriveAPI:
 
         while True:
             logger.debug("service.files().list({!r})", parms)
-            response = self.service.files().list(**parms).execute()  # noqa: PLE101
+            response = self.service.files().list(**parms).execute()
             logger.trace("response {!r}", response)
 
             yield from response.get("files", [])
@@ -376,7 +373,8 @@ class GoogleDriveAPI:
             if parms["pageToken"] is None:
                 return
 
-    def _list(
+    # Too many arguments; listing requires many orthogonal filter parameters.
+    def _list(  # noqa: PLR0913, PLR0917
         self,
         parent: DriveItem,
         path: str,
@@ -385,8 +383,6 @@ class GoogleDriveAPI:
         recursive: bool,
     ) -> Generator[DriveItem, None, None]:
         """Generate list of items at ``path``, which must be an existing drive folder."""
-
-        # pylint: disable=too-many-positional-arguments
 
         # Get the contents of the folder as a list of folders, and a list of files.
 
@@ -463,12 +459,12 @@ class GoogleDriveAPI:
             return response
 
         logger.info("service.files().create({!r})", parms)
-        response = self.service.files().create(**parms).execute()  # noqa: PLE101
+        response = self.service.files().create(**parms).execute()
         logger.debug("response {!r}", response)
 
         # Update cache
-        id: str = response["id"]
-        folder = self._get_item_by_id(id)
+        file_id: str = response["id"]
+        folder = self._get_item_by_id(file_id)
         folder["PATH"] = os.path.join(parent["PATH"], folder["name"])
         folder["PARENT"] = parent
         self._add_folder(folder)
@@ -485,7 +481,6 @@ class GoogleDriveAPI:
 
         path = self._normalize_drive_path(path)
 
-        #
         target_filenames: builtins.list[str | None] = []
         for item in self._get_items_at_path(path):
             target_filenames.append(
@@ -497,7 +492,8 @@ class GoogleDriveAPI:
 
         return target_filenames
 
-    def _download(
+    # Too many arguments/locals; download coordinates many aspects of a single file transfer.
+    def _download(  # noqa: PLR0913, PLR0914, PLR0917
         self,
         args: Namespace,
         file: DriveItem,
@@ -505,9 +501,7 @@ class GoogleDriveAPI:
         rename: str | None,
         itemno: int,
     ) -> str | None:
-        """docstring."""
-
-        # pylint: disable=too-many-positional-arguments
+        """Docstring."""
 
         if self.is_folder(file):
             logger.error("IsADirectoryError {!r}", path)
@@ -519,7 +513,6 @@ class GoogleDriveAPI:
 
         gmt = self._GOOGLE_MIMETYPES.get(file["mimeType"])
         if gmt:
-
             ext = gmt["extension"]
             if not path.endswith(ext):
                 logger.warning("{!r} expecting {!r} for {!r}", path, ext, file["mimeType"])
@@ -530,9 +523,10 @@ class GoogleDriveAPI:
                 target_filename = root + "(" + str(itemno + 1) + ")" + ext
 
             # https://developers.google.com/drive/api/v3/reference/files/export
-            parms: dict[str, str] = {}
-            parms["fileId"] = file["id"]
-            parms["mimeType"] = gmt["openxml"]
+            parms: dict[str, str] = {
+                "fileId": file["id"],
+                "mimeType": gmt["openxml"],
+            }
             logger.debug("Converting {!r} -> {!r}", file["mimeType"], parms["mimeType"])
 
             if args.no_action:
@@ -540,21 +534,19 @@ class GoogleDriveAPI:
                 return None
 
             logger.debug("service.files().export_media({!r})", parms)
-            request = self.service.files().export_media(**parms)  # noqa: PLE101
-
+            request = self.service.files().export_media(**parms)
         else:
             # https://developers.google.com/drive/api/v3/reference/files/get
-            parms = {}
-            parms["fileId"] = file["id"]
+            parms = {
+                "fileId": file["id"],
+            }
 
             if args.no_action:
                 logger.warning("service.files().get_media({!r})", parms)
                 return None
 
             logger.debug("service.files().get_media({!r})", parms)
-            request = self.service.files().get_media(**parms)  # noqa: PLE101
-
-        #
+            request = self.service.files().get_media(**parms)
         logger.debug("request {!r}", request)
         logger.info("Downloading {!r} -> {!r}", path, target_filename)
 
@@ -567,7 +559,8 @@ class GoogleDriveAPI:
 
         return target_filename
 
-    def upload(self, args: Namespace, file: Any) -> DriveItem:
+    # Too many branches; upload handles many mime-type and error conditions inline.
+    def upload(self, args: Namespace, file: Any) -> DriveItem:  # noqa: PLR0912
         """Upload single regular file.
 
              Any looping or walking of the filesystem is for the caller to do.
@@ -589,7 +582,6 @@ class GoogleDriveAPI:
 
         # assert file.isfile
 
-        #
         target_folder_pathname: str = (
             args.target_folder if args.target_folder else self.root_folder["PATH"]
         )
@@ -628,16 +620,19 @@ class GoogleDriveAPI:
                 )
             else:
                 try:
-                    import magic  # noqa: PLC415
+                    # Import deferred; `magic` is optional and may not be installed.
+                    import magic  # noqa: PLC0415
 
                     # `/usr/bin/file file | grep -q ASCII`
-                    magic_string = magic.from_buffer(open(file).read(1024))  # noqa:
+                    # SIM115: open() without context manager; read(1024) is a one-shot probe.
+                    magic_string = magic.from_buffer(open(file).read(1024))  # noqa: SIM115
                     if magic_string.find("ASCII") >= 0:
                         if target_basename.endswith(".csv"):
                             parms["body"]["mimeType"] = "text/csv"
                         else:
                             parms["body"]["mimeType"] = "text/plain"
-                except Exception:  # pylint: disable=broad-exception-caught
+                # magic detection is best-effort; fall back to default mime type on any error.
+                except Exception:  # noqa: PLW0703
                     pass
 
         response: DriveItem
@@ -649,8 +644,10 @@ class GoogleDriveAPI:
             logger.debug("service.files().create({!r})", parms)
 
             try:
-                response = self.service.files().create(**parms).execute()  # noqa: PLE101
-            except Exception as e:  # pylint: disable=broad-exception-caught
+                response = (
+                    self.service.files().create(**parms).execute()
+                )  # Catch broad exceptions; upload errors are logged and returned as an error dict.
+            except Exception as e:  # noqa: PLW0703
                 logger.error("{!r} {}", target_pathname, e)
                 response = {"ERROR": str(e)}
 
@@ -669,7 +666,8 @@ class GoogleDriveAPI:
 
         # make sure old file exists
         old: DriveItem | None = None
-        for old in self._get_items_at_path(oldpath):  # noqa:
+        # B007: loop variable used only to capture the last yielded item via break.
+        for old in self._get_items_at_path(oldpath):  # noqa: B007
             break
         if not old:
             logger.error("Can't find {!r}", oldpath)
@@ -704,7 +702,7 @@ class GoogleDriveAPI:
         else:
             logger.info("Renaming {!r} -> {!r}", oldpath, newpath)
             logger.debug("service.files().update({!r})", parms)
-            response = self.service.files().update(**parms).execute()  # noqa: PLE101
+            response = self.service.files().update(**parms).execute()
             logger.trace("response {!r}", response)
 
     def about(self) -> DriveItem:
@@ -715,7 +713,7 @@ class GoogleDriveAPI:
         parms["fields"] = "*" if self.options.all_fields else "storageQuota, user"
 
         logger.debug("service.about().get({!r})", parms)
-        response: DriveItem = self.service.about().get(**parms).execute()  # noqa: PLE101
+        response: DriveItem = self.service.about().get(**parms).execute()
         logger.trace("response {!r}", response)
 
         return response

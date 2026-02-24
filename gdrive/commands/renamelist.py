@@ -30,9 +30,8 @@ class DriveRenamelistCmd(GoogleDriveCmd):
         newroot = "/Ginger-PC/"
 
         with open(self.options.listfile, encoding="utf-8") as file:
-
-            for line in file:
-                line = line.strip()
+            for raw_line in file:
+                line = raw_line.strip()
                 if not line:
                     break
 
